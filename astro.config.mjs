@@ -21,17 +21,12 @@ import { remarkReadingTime } from './src/plugins/remark-reading-time.mjs'
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://turnip1202.github.io',
-  base: '/my-blog-astro/',
+  site: 'https://fuwari.vercel.app/',
+  base: '/my-blog-astro',
   trailingSlash: 'always',
-  build: {
-    assets: '_assets',
-  },
   integrations: [
     tailwind({
       nesting: true,
-      css: true,
-      applyBaseStyles: true,
     }),
     swup({
       theme: false,
@@ -58,7 +53,7 @@ export default defineConfig({
     svelte(),
     sitemap(),
     Compress({
-      CSS: true,
+      CSS: false,
       Image: false,
       Action: {
         Passed: async () => true, // https://github.com/PlayForm/Compress/issues/376
@@ -118,13 +113,7 @@ export default defineConfig({
   },
   vite: {
     build: {
-      assetsInlineLimit: 0,
       rollupOptions: {
-        output: {
-          assetFileNames: 'assets/[name].[hash][extname]',
-          chunkFileNames: 'assets/[name].[hash].js',
-          entryFileNames: 'assets/[name].[hash].js',
-        },
         onwarn(warning, warn) {
           // temporarily suppress this warning
           if (
