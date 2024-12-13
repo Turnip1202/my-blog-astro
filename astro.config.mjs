@@ -21,9 +21,12 @@ import { remarkReadingTime } from './src/plugins/remark-reading-time.mjs'
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://turnip1202.github.io/',
-  base: '/',
+  site: 'https://turnip1202.github.io',
+  base: '/my-blog-astro/',
   trailingSlash: 'always',
+  build: {
+    assets: '_assets',
+  },
   integrations: [
     tailwind({
       nesting: true,
@@ -115,7 +118,13 @@ export default defineConfig({
   },
   vite: {
     build: {
+      assetsInlineLimit: 0,
       rollupOptions: {
+        output: {
+          assetFileNames: 'assets/[name].[hash][extname]',
+          chunkFileNames: 'assets/[name].[hash].js',
+          entryFileNames: 'assets/[name].[hash].js',
+        },
         onwarn(warning, warn) {
           // temporarily suppress this warning
           if (
