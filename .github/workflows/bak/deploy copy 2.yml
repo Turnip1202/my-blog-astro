@@ -22,7 +22,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9.14.4  # Updated version to match package.json
+          version: 9.14.4
 
       - name: Install Dependencies
         run: pnpm install
