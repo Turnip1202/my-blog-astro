@@ -6,9 +6,9 @@ published: 2025-02-05 00:14:00
 
 description: Nginx与Laravel协同：构建高效Web服务
 
-tags: [Markdown, Blogging, mybatis]
+tags: [Markdown, Blogging, Laravel, Nginx, PHP, PHP - FPM]
 
-category: mybatis
+category: Laravel
 
 draft: false
 
