@@ -1,0 +1,1 @@
+import"./zh_TW.IltuBUYr.js";function i(r,e){return r.replace(/^\/|\/$/g,"").toLowerCase()===e.replace(/^\/|\/$/g,"").toLowerCase()}function t(...r){return r.join("/").replace(/\/+/g,"/")}function c(r){return t("","/my-blog-astro/",r)}export{i as p,c as u};

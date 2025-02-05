@@ -1,0 +1,1524 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Turnip1202</title><description>博客</description><link>https://turnip1202.github.io/</link><language>zh_CN</language><item><title>Nginx与Laravel协同-构建高效Web服务</title><link>https://turnip1202.github.io/posts/tutorials/laravel-1/</link><guid isPermaLink="true">https://turnip1202.github.io/posts/tutorials/laravel-1/</guid><description>Nginx与Laravel协同：构建高效Web服务</description><pubDate>Wed, 05 Feb 2025 00:14:00 GMT</pubDate><content:encoded>&lt;h1&gt;Nginx与Laravel协同：构建高效Web服务&lt;/h1&gt;
+&lt;p&gt;在Web开发领域，Nginx与Laravel协同工作能显著提升应用性能。其交互流程如下：用户在浏览器发起对Laravel应用的请求，Nginx接收后，静态资源请求直接返回文件；动态请求则转发给PHP - FPM。PHP - FPM启动PHP脚本，运行Laravel框架处理业务，完成后将响应返回Nginx，Nginx再把响应发回浏览器展示给用户。接下来，让我们深入了解如何在Windows系统中配置它们协同工作。&lt;/p&gt;
+&lt;h2&gt;一、前期准备&lt;/h2&gt;
+&lt;h3&gt;（一）安装软件&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;安装Nginx&lt;/strong&gt;：从Nginx官网下载Windows版安装包，解压到指定目录，如&lt;code&gt;C:\nginx&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;安装PHP&lt;/strong&gt;：在PHP官网下载Windows安装包，解压后配置环境变量，将&lt;code&gt;C:\php&lt;/code&gt;和&lt;code&gt;C:\php\ext&lt;/code&gt;添加到系统Path变量。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;安装MySQL&lt;/strong&gt;：利用MySQL Installer进行安装，设置好root密码等关键信息。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;安装Composer&lt;/strong&gt;：下载Composer安装程序，按提示完成安装，自动配置环境变量。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;（二）获取Laravel项目&lt;/h3&gt;
+&lt;p&gt;打开命令提示符，切换到项目存放目录，通过Composer创建项目：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;composer create-project --prefer-dist laravel/laravel your_project_name
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;二、配置PHP&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;进入PHP安装目录，复制&lt;code&gt;php.ini-development&lt;/code&gt;并重命名为&lt;code&gt;php.ini&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;编辑&lt;code&gt;php.ini&lt;/code&gt;，开启必要扩展，如&lt;code&gt;mysqli&lt;/code&gt;、&lt;code&gt;pdo_mysql&lt;/code&gt;等；设置文件上传大小限制，如&lt;code&gt;upload_max_filesize = 20M&lt;/code&gt;、&lt;code&gt;post_max_size = 20M&lt;/code&gt;。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;三、配置Nginx&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;打开Nginx安装目录下&lt;code&gt;conf&lt;/code&gt;文件夹中的&lt;code&gt;nginx.conf&lt;/code&gt;文件。&lt;/li&gt;
+&lt;li&gt;在&lt;code&gt;http&lt;/code&gt;块添加&lt;code&gt;server&lt;/code&gt;配置：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;server {
+    listen       80;
+    server_name  localhost;
+    root         C:/your_project_name/public;
+
+    index index.php index.html index.htm;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass   127.0.0.1:9000;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+        include        fastcgi_params;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;记得将&lt;code&gt;C:/your_project_name&lt;/code&gt;替换为实际项目路径。&lt;/p&gt;
+&lt;h2&gt;四、配置PHP - FPM&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;在PHP安装目录找到&lt;code&gt;php - fpm.conf&lt;/code&gt;（若没有，复制&lt;code&gt;php - fpm.conf.default&lt;/code&gt;并重命名）。&lt;/li&gt;
+&lt;li&gt;设置监听地址和端口，如&lt;code&gt;listen = 127.0.0.1:9000&lt;/code&gt;；根据服务器资源调整&lt;code&gt;pm.max_children&lt;/code&gt;、&lt;code&gt;pm.start_servers&lt;/code&gt;等参数。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;五、启动服务&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;切换到PHP安装目录的&lt;code&gt;sbin&lt;/code&gt;文件夹，启动PHP - FPM：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;php -f pm.php start
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;切换到Nginx安装目录，启动Nginx：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;start nginx
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;在浏览器输入&lt;code&gt;http://localhost&lt;/code&gt;，若配置正确，可看到Laravel项目欢迎页面。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;六、常见问题与解决&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;端口冲突&lt;/strong&gt;：使用&lt;code&gt;netstat -ano&lt;/code&gt;查看占用端口的进程，关闭冲突进程或修改Nginx、PHP - FPM监听端口。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;权限问题&lt;/strong&gt;：确保Nginx和PHP - FPM对Laravel项目文件和目录有足够访问权限。&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded></item><item><title>深入理解 MyBatis 一、二级缓存：提升数据库访问性能的利器</title><link>https://turnip1202.github.io/posts/study/mybatis-cache/</link><guid isPermaLink="true">https://turnip1202.github.io/posts/study/mybatis-cache/</guid><description>详细解析-mybatis-缓存</description><pubDate>Tue, 04 Feb 2025 00:14:00 GMT</pubDate><content:encoded>&lt;h1&gt;深入理解 MyBatis 一、二级缓存：提升数据库访问性能的利器&lt;/h1&gt;
+&lt;p&gt;在使用 MyBatis 进行数据库开发时，缓存是一个非常重要的特性，它能够显著提高应用程序的性能。MyBatis 提供了两级缓存机制：一级缓存和二级缓存。今天，就让我们一起深入了解这两级缓存的工作原理、使用方法以及适用场景。&lt;/p&gt;
+&lt;h2&gt;一级缓存：SqlSession 级别的缓存&lt;/h2&gt;
+&lt;h3&gt;什么是一级缓存&lt;/h3&gt;
+&lt;p&gt;一级缓存也被称为本地缓存，它是基于 &lt;code&gt;SqlSession&lt;/code&gt; 级别的缓存。简单来说，在同一个 &lt;code&gt;SqlSession&lt;/code&gt; 中，如果执行相同的 SQL 查询，MyBatis 会优先从缓存中查找结果，而不是再次访问数据库。这大大减少了数据库的查询次数，提高了查询效率。&lt;/p&gt;
+&lt;h3&gt;一级缓存的工作原理&lt;/h3&gt;
+&lt;p&gt;当我们使用 &lt;code&gt;SqlSession&lt;/code&gt; 执行一个查询操作时，MyBatis 会将查询语句和查询参数组合成一个唯一的 &lt;code&gt;key&lt;/code&gt;，并将查询结果作为 &lt;code&gt;value&lt;/code&gt;，存放在当前 &lt;code&gt;SqlSession&lt;/code&gt; 的缓存中。后续在同一个 &lt;code&gt;SqlSession&lt;/code&gt; 中，如果再次执行相同的查询（即 &lt;code&gt;key&lt;/code&gt; 相同），MyBatis 会直接从缓存中获取结果，而不会再次向数据库发送查询请求。&lt;/p&gt;
+&lt;h3&gt;示例代码&lt;/h3&gt;
+&lt;p&gt;下面是一个简单的 Java 代码示例，演示了一级缓存的使用：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+
+import java.io.InputStream;
+
+public class FirstLevelCacheExample {
+    public static void main(String[] args) throws Exception {
+        // 加载 MyBatis 配置文件
+        String resource = &quot;mybatis-config.xml&quot;;
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+
+        // 打开一个 SqlSession
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            // 第一次查询
+            Object result1 = session.selectOne(&quot;com.example.mapper.YourMapper.selectById&quot;, 1);
+            System.out.println(&quot;第一次查询结果: &quot; + result1);
+
+            // 第二次查询
+            Object result2 = session.selectOne(&quot;com.example.mapper.YourMapper.selectById&quot;, 1);
+            System.out.println(&quot;第二次查询结果: &quot; + result2);
+
+            // 这里第二次查询会直接从一级缓存中获取结果，不会再次访问数据库
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在这个示例中，我们使用同一个 &lt;code&gt;SqlSession&lt;/code&gt; 执行了两次相同的查询。第二次查询时，MyBatis 会直接从一级缓存中获取结果，而不会再次向数据库发送查询请求。&lt;/p&gt;
+&lt;h3&gt;一级缓存的失效情况&lt;/h3&gt;
+&lt;p&gt;一级缓存虽然方便，但也有一些情况会导致缓存失效：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;SqlSession 关闭&lt;/strong&gt;：当 &lt;code&gt;SqlSession&lt;/code&gt; 关闭后，该 &lt;code&gt;SqlSession&lt;/code&gt; 的一级缓存也会被清空。这是因为 &lt;code&gt;SqlSession&lt;/code&gt; 关闭后，它所占用的资源会被释放，缓存也不例外。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;执行增删改操作&lt;/strong&gt;：在同一个 &lt;code&gt;SqlSession&lt;/code&gt; 中执行增删改操作后，一级缓存会被清空。这是因为增删改操作可能会改变数据库中的数据，为了保证数据的一致性，需要清空缓存。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;二级缓存：Mapper 级别的缓存&lt;/h2&gt;
+&lt;h3&gt;什么是二级缓存&lt;/h3&gt;
+&lt;p&gt;二级缓存是基于 Mapper 级别的缓存，多个 &lt;code&gt;SqlSession&lt;/code&gt; 可以共享同一个 Mapper 的二级缓存。也就是说，不同的 &lt;code&gt;SqlSession&lt;/code&gt; 执行相同 Mapper 下的相同查询时，可以从二级缓存中获取结果，进一步提高了缓存的利用率。&lt;/p&gt;
+&lt;h3&gt;二级缓存的工作原理&lt;/h3&gt;
+&lt;p&gt;二级缓存的工作原理与一级缓存类似，只不过它的作用范围更广。当一个 &lt;code&gt;SqlSession&lt;/code&gt; 执行查询操作后，MyBatis 会将查询结果存放在对应的 Mapper 的二级缓存中。后续其他 &lt;code&gt;SqlSession&lt;/code&gt; 执行相同 Mapper 下的相同查询时，会先从二级缓存中查找，如果缓存中有数据，就直接返回。&lt;/p&gt;
+&lt;h3&gt;开启二级缓存的步骤&lt;/h3&gt;
+&lt;p&gt;要使用二级缓存，需要进行以下几个步骤：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;在 mybatis-config.xml 中开启二级缓存&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;settings&amp;gt;
+    &amp;lt;setting name=&quot;cacheEnabled&quot; value=&quot;true&quot;/&amp;gt;
+&amp;lt;/settings&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这一步是全局开启二级缓存的开关，只有将 &lt;code&gt;cacheEnabled&lt;/code&gt; 设置为 &lt;code&gt;true&lt;/code&gt;，二级缓存才会生效。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;在 Mapper XML 文件中开启二级缓存&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;mapper namespace=&quot;com.example.mapper.YourMapper&quot;&amp;gt;
+    &amp;lt;!-- 开启二级缓存 --&amp;gt;
+    &amp;lt;cache/&amp;gt;
+
+    &amp;lt;select id=&quot;selectById&quot; parameterType=&quot;int&quot; resultType=&quot;com.example.entity.YourEntity&quot;&amp;gt;
+        SELECT * FROM your_table WHERE id = #{id}
+    &amp;lt;/select&amp;gt;
+&amp;lt;/mapper&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;或者在 Mapper 接口上使用 &lt;code&gt;@CacheNamespace&lt;/code&gt; 注解开启：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import org.apache.ibatis.annotations.CacheNamespace;
+import org.apache.ibatis.annotations.Select;
+
+@CacheNamespace
+public interface YourMapper {
+    @Select(&quot;SELECT * FROM your_table WHERE id = #{id}&quot;)
+    YourEntity selectById(int id);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;示例代码&lt;/h3&gt;
+&lt;p&gt;下面是一个演示二级缓存使用的 Java 代码示例：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+
+import java.io.InputStream;
+
+public class SecondLevelCacheExample {
+    public static void main(String[] args) throws Exception {
+        // 加载 MyBatis 配置文件
+        String resource = &quot;mybatis-config.xml&quot;;
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+
+        // 第一个 SqlSession
+        try (SqlSession session1 = sqlSessionFactory.openSession()) {
+            Object result1 = session1.selectOne(&quot;com.example.mapper.YourMapper.selectById&quot;, 1);
+            System.out.println(&quot;第一个 SqlSession 查询结果: &quot; + result1);
+        }
+
+        // 第二个 SqlSession
+        try (SqlSession session2 = sqlSessionFactory.openSession()) {
+            Object result2 = session2.selectOne(&quot;com.example.mapper.YourMapper.selectById&quot;, 1);
+            System.out.println(&quot;第二个 SqlSession 查询结果: &quot; + result2);
+
+            // 这里第二个 SqlSession 会从二级缓存中获取结果，不会再次访问数据库
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在这个示例中，我们使用了两个不同的 &lt;code&gt;SqlSession&lt;/code&gt; 执行相同的查询。由于开启了二级缓存，第二个 &lt;code&gt;SqlSession&lt;/code&gt; 会直接从二级缓存中获取结果，而不会再次向数据库发送查询请求。&lt;/p&gt;
+&lt;h3&gt;二级缓存的失效情况&lt;/h3&gt;
+&lt;p&gt;与一级缓存类似，二级缓存也有一些情况会导致缓存失效：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;执行增删改操作&lt;/strong&gt;：在任何一个 &lt;code&gt;SqlSession&lt;/code&gt; 中执行增删改操作后，该 Mapper 的二级缓存会被清空。这是为了保证数据的一致性，避免缓存中的数据与数据库中的数据不一致。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;总结&lt;/h2&gt;
+&lt;p&gt;MyBatis 的一级缓存和二级缓存是非常实用的性能优化工具。一级缓存适用于在同一个 &lt;code&gt;SqlSession&lt;/code&gt; 中多次执行相同查询的场景，而二级缓存则适用于多个 &lt;code&gt;SqlSession&lt;/code&gt; 共享缓存的场景。在使用缓存时，需要注意缓存的失效情况，以保证数据的一致性。同时，也需要根据具体的业务场景合理使用缓存，避免过度使用缓存导致数据不一致或内存占用过高的问题。希望通过本文的介绍，你对 MyBatis 的一、二级缓存有了更深入的理解。&lt;/p&gt;
+</content:encoded></item><item><title>Jenkins 安装与使用</title><link>https://turnip1202.github.io/posts/tutorials/jenkins/</link><guid isPermaLink="true">https://turnip1202.github.io/posts/tutorials/jenkins/</guid><description>Jenkins快速入门。</description><pubDate>Sun, 02 Feb 2025 22:44:00 GMT</pubDate><content:encoded>&lt;h1&gt;Jenkins快速入门---以Windows为例&lt;/h1&gt;
+&lt;p&gt;第一次启动，会要求输入初始密码，初始密码在用户目录下，例如：C:\Users\turni\.jenkins\secrets&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/0bbce696-79f8-4a1f-bc19-1be36b41639d.png&quot; alt=&quot;0bbce696-79f8-4a1f-bc19-1be36b41639d&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/a4583551-cb3f-436b-8ef0-bb0627fac95d.png&quot; alt=&quot;a4583551-cb3f-436b-8ef0-bb0627fac95d&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;待续。。。&lt;/strong&gt;&lt;/p&gt;
+</content:encoded></item><item><title>大模型部署教程</title><link>https://turnip1202.github.io/posts/tutorials/ai-demo1/</link><guid isPermaLink="true">https://turnip1202.github.io/posts/tutorials/ai-demo1/</guid><description>通过ollama框架进行大模型的本地部署。</description><pubDate>Thu, 30 Jan 2025 22:44:00 GMT</pubDate><content:encoded>&lt;h1&gt;大模型本地部署&lt;/h1&gt;
+&lt;p&gt;1.前置条件&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;docker ，需要有docker，使用docker可以运行LobeChat，windows可以下载Docker Desktop，我这里使用的就是Docker Desktop&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;网络尽量能够连接世界网&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;目标：&lt;/h3&gt;
+&lt;p&gt;1.使用Ollama部署大模型；这里部署后的大模型是命令行的。&lt;/p&gt;
+&lt;p&gt;2.使用LobeChat连接本地的大模型；LobeChat是一个的开源 AI 聊天框架，可以一键集成很多大模型，主要是它提供了美观UI界面。&lt;/p&gt;
+&lt;h2&gt;一、ollama相关的配置&lt;/h2&gt;
+&lt;h3&gt;1.下载和安装&lt;/h3&gt;
+&lt;p&gt;下载地址： &lt;a href=&quot;https://ollama.org.cn/download&quot;&gt;在macOS上下载Ollama - Ollama 框架&lt;/a&gt;  ；安装是一键式的，一般不会有问题，如果安装失败了，自行解决。&lt;/p&gt;
+&lt;p&gt;大模型市场：&lt;/p&gt;
+&lt;p&gt;中文版： https://ollama.org.cn/  不好用，搜索功能不能用，只能在 &lt;strong&gt;模型&lt;/strong&gt; 里找&lt;/p&gt;
+&lt;p&gt;世界版： https://ollama.com/ 顶部可以搜索大模型名&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/80f8845a-569a-4669-a5c3-8c3c089789a5.png&quot; alt=&quot;80f8845a-569a-4669-a5c3-8c3c089789a5&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/2410d140-794e-4b4e-870a-157fd94bb9b0.png&quot; alt=&quot;2410d140-794e-4b4e-870a-157fd94bb9b0&quot; /&gt;&lt;/p&gt;
+&lt;h3&gt;2.基本操作&lt;/h3&gt;
+&lt;p&gt;搜索、找到想要本地部署的模型名&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/949b89e1-89ea-4011-a303-5d931110de9b.png&quot; alt=&quot;949b89e1-89ea-4011-a303-5d931110de9b&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/f07c39ca-9aa9-4d84-bee1-695b1f13c4bd.png&quot; alt=&quot;f07c39ca-9aa9-4d84-bee1-695b1f13c4bd&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;DeepSeek的模型都很大，我这里就使用r2版本的了，比较小，操作都是一样的。&lt;/p&gt;
+&lt;p&gt;直接复制命令运行就可以了。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/4792fbcb-c7c2-48c5-9e54-68f4ee872c41.png&quot; alt=&quot;4792fbcb-c7c2-48c5-9e54-68f4ee872c41&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/04e44aa7-90df-4d45-8975-57b01b3c2bb9.png&quot; alt=&quot;04e44aa7-90df-4d45-8975-57b01b3c2bb9&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;和docker类型，本地已经有，就会用本地的，本地没有就会自动拉取，然后运行。&lt;/p&gt;
+&lt;h2&gt;二、LobeChat相关的配置&lt;/h2&gt;
+&lt;h3&gt;1.下载和安装&lt;/h3&gt;
+&lt;p&gt;官网： https://lobehub.com/zh       可以在线使用，自行探索&lt;/p&gt;
+&lt;p&gt;本地配置： https://lobehub.com/zh/docs/usage/features/local-llm  本地在docker中启动一个LobeChat，需要使用docker。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;docker run -d -p 3210:3210 -e OLLAMA_PROXY_URL=http://host.docker.internal:11434/v1 lobehub/lobe-chat
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;直接使用docker运行即可&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/122bf36f-a972-45f1-8c2a-23b16cadad56.png&quot; alt=&quot;122bf36f-a972-45f1-8c2a-23b16cadad56&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/a6bccc33-6835-421c-ae88-dcdcbeebe585.png&quot; alt=&quot;a6bccc33-6835-421c-ae88-dcdcbeebe585&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;点击Port(s)的端口号就可以打开LobeChat的页面了。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/c76b4162-63db-4811-a754-904ea3d14e7f.png&quot; alt=&quot;c76b4162-63db-4811-a754-904ea3d14e7f&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;在设置里，进行对应模型的添加即可。有一些模型是没有的，没有就是LobeChat没有接入。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/d73e0666-f9a1-48fe-a09f-5314ddccf124.png&quot; alt=&quot;d73e0666-f9a1-48fe-a09f-5314ddccf124&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;选择下载好的大模型即可，然后就可以聊天了。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/b7144597-9b0b-467b-9b52-8ed42da23af9.png&quot; alt=&quot;b7144597-9b0b-467b-9b52-8ed42da23af9&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/ffa178d6-0edc-402b-9acf-9af8114130ef.png&quot; alt=&quot;ffa178d6-0edc-402b-9acf-9af8114130ef&quot; /&gt;&lt;/p&gt;
+</content:encoded></item><item><title>复杂SQL练习</title><link>https://turnip1202.github.io/posts/study/sql-demo1/</link><guid isPermaLink="true">https://turnip1202.github.io/posts/study/sql-demo1/</guid><description>一些练习sql语句的题目。</description><pubDate>Thu, 30 Jan 2025 13:49:00 GMT</pubDate><content:encoded>&lt;h1&gt;SQL练习题&lt;/h1&gt;
+&lt;h3&gt;题目 1: 销售数据分析&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;需求&lt;/strong&gt;: 获取每个销售人员在过去一年内的销售总额、订单数量以及平均订单金额。结果按销售额降序排列，并显示前10名销售人员的信息。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;-- 1
+SELECT 
+    sp.name AS sales_person_name,
+    COUNT(o.id) AS order_count,
+    SUM(o.total_amount) AS total_sales,
+    AVG(o.total_amount) AS average_order_value
+FROM 
+    sales_persons sp
+JOIN 
+    orders o ON sp.id = o.sales_person_id
+WHERE 
+    o.order_date &amp;gt;= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+GROUP BY 
+    sp.id, sp.name
+ORDER BY 
+    total_sales DESC
+LIMIT 10;
+
+
+CREATE TABLE sales_persons (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE orders (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    sales_person_id INT,
+    order_date DATE,
+    total_amount DECIMAL(10, 2),
+    FOREIGN KEY (sales_person_id) REFERENCES sales_persons(id)
+);
+INSERT INTO sales_persons (name) VALUES (&apos;Alice&apos;), (&apos;Bob&apos;), (&apos;Charlie&apos;);
+
+INSERT INTO orders (sales_person_id, order_date, total_amount) VALUES
+(1, &apos;2023-01-15&apos;, 150.00),
+(1, &apos;2023-02-20&apos;, 200.00),
+(2, &apos;2023-03-10&apos;, 175.00),
+(2, &apos;2023-04-25&apos;, 225.00),
+(3, &apos;2023-05-30&apos;, 300.00),
+(3, &apos;2023-06-05&apos;, 250.00),
+(1, &apos;2023-07-18&apos;, 180.00),
+(2, &apos;2023-08-22&apos;, 210.00),
+(3, &apos;2023-09-27&apos;, 280.00);
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;题目 2: 学生成绩统计&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;需求&lt;/strong&gt;: 计算每个学生的总成绩，并找出各科目的最高分学生及其分数。结果显示学生的姓名、科目名称、总成绩以及该科目最高分的学生姓名和分数。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;
+-- 2--
+WITH StudentTotalScores AS (
+    SELECT 
+        s.id AS student_id,
+        s.name AS student_name,
+        SUM(sc.score) AS total_score
+    FROM 
+        students s
+    JOIN 
+        scores sc ON s.id = sc.student_id
+    GROUP BY 
+        s.id, s.name
+),
+SubjectTopScores AS (
+    SELECT 
+        su.subject_name,
+        st.student_name AS top_student_name,
+        st.total_score AS top_score
+    FROM 
+        subjects su
+    JOIN 
+        scores sc ON su.id = sc.subject_id
+    JOIN 
+        StudentTotalScores st ON sc.student_id = st.student_id
+    WHERE 
+        sc.score = (
+            SELECT MAX(score)
+            FROM scores
+            WHERE subject_id = su.id
+        )
+)
+SELECT 
+    sts.student_name,
+    sts.total_score,
+    sts_tsu.subject_name,
+    sts_tsu.top_student_name,
+    sts_tsu.top_score
+FROM 
+    StudentTotalScores sts
+JOIN 
+    SubjectTopScores sts_tsu ON sts.student_id IN (
+        SELECT student_id
+        FROM scores
+        WHERE subject_id = (
+            SELECT id
+            FROM subjects
+            WHERE subject_name = sts_tsu.subject_name
+        )
+    )
+ORDER BY 
+    sts.total_score DESC;
+
+CREATE TABLE students (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE subjects (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    subject_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE scores (
+    student_id INT,
+    subject_id INT,
+    score DECIMAL(5, 2),
+    FOREIGN KEY (student_id) REFERENCES students(id),
+    FOREIGN KEY (subject_id) REFERENCES subjects(id)
+);
+INSERT INTO students (name) VALUES (&apos;Tom&apos;), (&apos;Jerry&apos;), (&apos;Spike&apos;);
+
+INSERT INTO subjects (subject_name) VALUES (&apos;Math&apos;), (&apos;Science&apos;), (&apos;History&apos;);
+
+INSERT INTO scores (student_id, subject_id, score) VALUES
+(1, 1, 85.00),
+(1, 2, 90.00),
+(1, 3, 88.00),
+(2, 1, 78.00),
+(2, 2, 82.00),
+(2, 3, 80.00),
+(3, 1, 92.00),
+(3, 2, 88.00),
+(3, 3, 95.00);
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;题目 3: 库存管理&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;需求&lt;/strong&gt;: 获取每个仓库中所有商品的库存总量，并找出哪些仓库的商品种类最多。结果显示仓库名称、库存总量以及商品种类数。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;
+-- 3--
+
+WITH WarehouseInventoryTotals AS (
+    SELECT 
+        w.warehouse_name,
+        SUM(i.quantity) AS total_quantity,
+        COUNT(DISTINCT i.product_id) AS product_count
+    FROM 
+        warehouses w
+    LEFT JOIN 
+        inventory i ON w.id = i.warehouse_id
+    GROUP BY 
+        w.id, w.warehouse_name
+),
+MaxProductCount AS (
+    SELECT 
+        MAX(product_count) AS max_product_count
+    FROM 
+        WarehouseInventoryTotals
+)
+SELECT 
+    wit.warehouse_name,
+    wit.total_quantity,
+    wit.product_count
+FROM 
+    WarehouseInventoryTotals wit
+JOIN 
+    MaxProductCount mpc ON wit.product_count = mpc.max_product_count
+ORDER BY 
+    wit.total_quantity DESC;
+
+CREATE TABLE warehouses (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    warehouse_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE products (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    product_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE inventory (
+    warehouse_id INT,
+    product_id INT,
+    quantity INT,
+    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+INSERT INTO warehouses (warehouse_name) VALUES (&apos;Warehouse A&apos;), (&apos;Warehouse B&apos;), (&apos;Warehouse C&apos;);
+
+INSERT INTO products (product_name) VALUES (&apos;Product X&apos;), (&apos;Product Y&apos;), (&apos;Product Z&apos;);
+
+INSERT INTO inventory (warehouse_id, product_id, quantity) VALUES
+(1, 1, 100),
+(1, 2, 150),
+(1, 3, 200),
+(2, 1, 120),
+(2, 2, 180),
+(3, 3, 250),
+(3, 1, 130);
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;题目 4: 客户购买行为分析&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;需求&lt;/strong&gt;: 分析每个客户的购买频率和每次购买的平均金额，并找出购买频率最高的客户。结果显示客户的姓名、购买次数、平均购买金额以及购买频率最高的客户的姓名和购买次数。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;
+-- 4 
+
+WITH CustomerPurchaseStats AS (
+    SELECT 
+        c.id AS customer_id,
+        c.name AS customer_name,
+        COUNT(p.id) AS purchase_count,
+        AVG(p.amount) AS avg_purchase_amount
+    FROM 
+        customers c
+    JOIN 
+        purchases p ON c.id = p.customer_id
+    GROUP BY 
+        c.id, c.name
+),
+MaxPurchaseFrequency AS (
+    SELECT 
+        MAX(purchase_count) AS max_purchase_count
+    FROM 
+        CustomerPurchaseStats
+)
+SELECT 
+    cps.customer_name,
+    cps.purchase_count,
+    cps.avg_purchase_amount
+FROM 
+    CustomerPurchaseStats cps
+JOIN 
+    MaxPurchaseFrequency mpf ON cps.purchase_count = mpf.max_purchase_count
+ORDER BY 
+    cps.purchase_count DESC;
+
+CREATE TABLE customers (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE purchases (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    customer_id INT,
+    purchase_date DATE,
+    amount DECIMAL(10, 2),
+    FOREIGN KEY (customer_id) REFERENCES customers(id)
+);
+
+INSERT INTO customers (name) VALUES (&apos;John&apos;), (&apos;Jane&apos;), (&apos;Doe&apos;);
+
+INSERT INTO purchases (customer_id, purchase_date, amount) VALUES
+(1, &apos;2023-01-10&apos;, 100.00),
+(1, &apos;2023-02-15&apos;, 150.00),
+(1, &apos;2023-03-20&apos;, 200.00),
+(2, &apos;2023-04-25&apos;, 120.00),
+(2, &apos;2023-05-30&apos;, 180.00),
+(3, &apos;2023-06-05&apos;, 90.00),
+(3, &apos;2023-07-10&apos;, 110.00),
+(3, &apos;2023-08-15&apos;, 130.00),
+(3, &apos;2023-09-20&apos;, 150.00);
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;题目 5: 社交媒体帖子分析&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;需求&lt;/strong&gt;: 分析每个用户的帖子发布频率、点赞总数以及评论总数。结果显示用户名、发帖数、点赞总数、评论总数以及发帖最多的用户的用户名和发帖数。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;
+
+-- 5
+WITH UserPostStats AS (
+    SELECT 
+        u.id AS user_id,
+        u.username,
+        COUNT(po.id) AS post_count,
+        COUNT(l.id) AS like_count,
+        COUNT(co.id) AS comment_count
+    FROM 
+        users u
+    LEFT JOIN 
+        posts po ON u.id = po.user_id
+    LEFT JOIN 
+        likes l ON po.id = l.post_id
+    LEFT JOIN 
+        comments co ON po.id = co.post_id
+    GROUP BY 
+        u.id, u.username
+),
+MaxPostCount AS (
+    SELECT 
+        MAX(post_count) AS max_post_count
+    FROM 
+        UserPostStats
+)
+SELECT 
+    ups.username,
+    ups.post_count,
+    ups.like_count,
+    ups.comment_count
+FROM 
+    UserPostStats ups
+JOIN 
+    MaxPostCount mpc ON ups.post_count = mpc.max_post_count
+ORDER BY 
+    ups.post_count DESC;
+
+CREATE TABLE users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE posts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    post_date DATE,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE likes (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    post_id INT,
+    FOREIGN KEY (post_id) REFERENCES posts(id)
+);
+
+CREATE TABLE comments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    post_id INT,
+    FOREIGN KEY (post_id) REFERENCES posts(id)
+);
+INSERT INTO users (username) VALUES (&apos;UserA&apos;), (&apos;UserB&apos;), (&apos;UserC&apos;);
+
+INSERT INTO posts (user_id, post_date) VALUES
+(1, &apos;2023-01-01&apos;),
+(1, &apos;2023-02-01&apos;),
+(2, &apos;2023-03-01&apos;),
+(2, &apos;2023-04-01&apos;),
+(3, &apos;2023-05-01&apos;),
+(3, &apos;2023-06-01&apos;),
+(3, &apos;2023-07-01&apos;);
+
+INSERT INTO likes (post_id) VALUES
+(1), (1), (2), (3), (3), (3), (4), (5), (6), (7);
+
+INSERT INTO comments (post_id) VALUES
+(1), (1), (2), (3), (3), (4), (5), (6), (7), (7);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;题目: 企业项目管理分析&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;需求&lt;/strong&gt;: 获取每个员工在每个项目上花费的工作时间、完成的任务数量以及每个项目的总工时。结果显示员工姓名、部门名称、项目名称、工作时间（小时）、完成的任务数量以及项目的总工时。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;表结构&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;employees&lt;/code&gt;: 包含员工基本信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;name&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;department_id&lt;/code&gt; (外键关联到 departments.id)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;departments&lt;/code&gt;: 包含部门信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;name&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;projects&lt;/code&gt;: 包含项目信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;name&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;start_date&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;end_date&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;tasks&lt;/code&gt;: 包含任务信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;project_id&lt;/code&gt; (外键关联到 projects.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;description&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;status&lt;/code&gt; (ENUM(&apos;Pending&apos;, &apos;In Progress&apos;, &apos;Completed&apos;))&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;task_assignments&lt;/code&gt;: 包含任务分配信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;task_id&lt;/code&gt; (外键关联到 tasks.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;employee_id&lt;/code&gt; (外键关联到 employees.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;assigned_date&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;completed_date&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;work_logs&lt;/code&gt;: 包含工作日志信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;task_assignment_id&lt;/code&gt; (外键关联到 task_assignments.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;log_date&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;hours_worked&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code&gt;CREATE TABLE departments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE employees (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    department_id INT,
+    FOREIGN KEY (department_id) REFERENCES departments(id)
+);
+
+CREATE TABLE projects (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    start_date DATE,
+    end_date DATE
+);
+
+CREATE TABLE tasks (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    project_id INT,
+    description TEXT,
+    status ENUM(&apos;Pending&apos;, &apos;In Progress&apos;, &apos;Completed&apos;) DEFAULT &apos;Pending&apos;,
+    FOREIGN KEY (project_id) REFERENCES projects(id)
+);
+
+CREATE TABLE task_assignments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    task_id INT,
+    employee_id INT,
+    assigned_date DATE,
+    completed_date DATE,
+    FOREIGN KEY (task_id) REFERENCES tasks(id),
+    FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
+CREATE TABLE work_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    task_assignment_id INT,
+    log_date DATE,
+    hours_worked DECIMAL(5, 2),
+    FOREIGN KEY (task_assignment_id) REFERENCES task_assignments(id)
+);
+-- Insert departments
+INSERT INTO departments (name) VALUES (&apos;Engineering&apos;), (&apos;Marketing&apos;), (&apos;HR&apos;);
+
+-- Insert employees
+INSERT INTO employees (name, department_id) VALUES 
+(&apos;Alice&apos;, 1), (&apos;Bob&apos;, 1), (&apos;Charlie&apos;, 2), (&apos;David&apos;, 3);
+
+-- Insert projects
+INSERT INTO projects (name, start_date, end_date) VALUES 
+(&apos;Project Alpha&apos;, &apos;2023-01-01&apos;, &apos;2023-12-31&apos;),
+(&apos;Project Beta&apos;, &apos;2023-02-01&apos;, &apos;2023-11-30&apos;),
+(&apos;Project Gamma&apos;, &apos;2023-03-01&apos;, &apos;2023-10-31&apos;);
+
+-- Insert tasks
+INSERT INTO tasks (project_id, description, status) VALUES 
+(1, &apos;Develop Module A&apos;, &apos;Completed&apos;),
+(1, &apos;Develop Module B&apos;, &apos;In Progress&apos;),
+(2, &apos;Market Research&apos;, &apos;Completed&apos;),
+(2, &apos;Ad Campaign&apos;, &apos;Pending&apos;),
+(3, &apos;Recruitment Drive&apos;, &apos;Completed&apos;),
+(3, &apos;Employee Training&apos;, &apos;In Progress&apos;);
+
+-- Insert task assignments
+INSERT INTO task_assignments (task_id, employee_id, assigned_date, completed_date) VALUES 
+(1, 1, &apos;2023-01-10&apos;, &apos;2023-02-10&apos;),
+(2, 1, &apos;2023-02-15&apos;, NULL),
+(3, 2, &apos;2023-02-20&apos;, &apos;2023-03-20&apos;),
+(4, 2, &apos;2023-03-25&apos;, NULL),
+(5, 3, &apos;2023-03-30&apos;, &apos;2023-04-30&apos;),
+(6, 3, &apos;2023-05-05&apos;, NULL);
+
+-- Insert work logs
+INSERT INTO work_logs (task_assignment_id, log_date, hours_worked) VALUES 
+(1, &apos;2023-01-11&apos;, 8.00),
+(1, &apos;2023-01-12&apos;, 7.50),
+(1, &apos;2023-01-13&apos;, 8.00),
+(2, &apos;2023-02-16&apos;, 6.00),
+(2, &apos;2023-02-17&apos;, 7.00),
+(3, &apos;2023-02-21&apos;, 8.00),
+(3, &apos;2023-02-22&apos;, 7.50),
+(4, &apos;2023-03-26&apos;, 6.00),
+(5, &apos;2023-03-31&apos;, 8.00),
+(5, &apos;2023-04-01&apos;, 7.50),
+(6, &apos;2023-05-06&apos;, 6.00);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h4&gt;复杂的SQL查询&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;
+WITH TaskCompletion AS (
+    SELECT 
+        ta.employee_id,
+        ta.task_id,
+        ta.project_id,
+        COUNT(wl.id) AS task_completed_count,
+        SUM(wl.hours_worked) AS total_hours_worked
+    FROM 
+        task_assignments ta
+    LEFT JOIN 
+        work_logs wl ON ta.id = wl.task_assignment_id
+    GROUP BY 
+        ta.employee_id, ta.task_id, ta.project_id
+),
+ProjectWorkHours AS (
+    SELECT 
+        ta.project_id,
+        SUM(wl.hours_worked) AS project_total_hours
+    FROM 
+        task_assignments ta
+    JOIN 
+        work_logs wl ON ta.id = wl.task_assignment_id
+    GROUP BY 
+        ta.project_id
+)
+SELECT 
+    e.name AS employee_name,
+    d.name AS department_name,
+    p.name AS project_name,
+    tc.total_hours_worked AS hours_worked,
+    tc.task_completed_count AS tasks_completed,
+    pw.project_total_hours AS project_total_hours
+FROM 
+    TaskCompletion tc
+JOIN 
+    employees e ON tc.employee_id = e.id
+JOIN 
+    departments d ON e.department_id = d.id
+JOIN 
+    projects p ON tc.project_id = p.id
+JOIN 
+    ProjectWorkHours pw ON tc.project_id = pw.project_id
+ORDER BY 
+    e.name, p.name;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;解释&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;TaskCompletion CTE&lt;/strong&gt;: 计算每个任务分配的完成情况，包括完成的任务数量和总工作小时数。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ProjectWorkHours CTE&lt;/strong&gt;: 计算每个项目的总工作小时数。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;最终查询&lt;/strong&gt;: 结合上述两个CTE，获取每个员工在每个项目上的工作时间、完成的任务数量以及项目的总工时。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;更加复杂的sql&lt;/h2&gt;
+&lt;h3&gt;题目: 企业项目管理与资源分配分析&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;需求&lt;/strong&gt;: 获取每个员工在每个项目上的工作时间、完成的任务数量、项目的总工时以及每个员工的层级结构（上级和下属关系）。此外，还需要计算每个员工的间接贡献（即下属的工作小时数）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;表结构&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;departments&lt;/code&gt;: 包含部门信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;name&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;employees&lt;/code&gt;: 包含员工基本信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;name&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;department_id&lt;/code&gt; (外键关联到 departments.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;manager_id&lt;/code&gt; (外键关联到 employees.id)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;projects&lt;/code&gt;: 包含项目信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;name&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;start_date&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;end_date&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;tasks&lt;/code&gt;: 包含任务信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;project_id&lt;/code&gt; (外键关联到 projects.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;description&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;status&lt;/code&gt; (ENUM(&apos;Pending&apos;, &apos;In Progress&apos;, &apos;Completed&apos;))&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;task_assignments&lt;/code&gt;: 包含任务分配信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;task_id&lt;/code&gt; (外键关联到 tasks.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;employee_id&lt;/code&gt; (外键关联到 employees.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;assigned_date&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;completed_date&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;work_logs&lt;/code&gt;: 包含工作日志信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;task_assignment_id&lt;/code&gt; (外键关联到 task_assignments.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;log_date&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;hours_worked&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code&gt;CREATE TABLE departments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE employees (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    department_id INT,
+    manager_id INT,
+    FOREIGN KEY (department_id) REFERENCES departments(id),
+    FOREIGN KEY (manager_id) REFERENCES employees(id)
+);
+
+CREATE TABLE projects (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    start_date DATE,
+    end_date DATE
+);
+
+CREATE TABLE tasks (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    project_id INT,
+    description TEXT,
+    status ENUM(&apos;Pending&apos;, &apos;In Progress&apos;, &apos;Completed&apos;) DEFAULT &apos;Pending&apos;,
+    FOREIGN KEY (project_id) REFERENCES projects(id)
+);
+
+CREATE TABLE task_assignments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    task_id INT,
+    employee_id INT,
+    assigned_date DATE,
+    completed_date DATE,
+    FOREIGN KEY (task_id) REFERENCES tasks(id),
+    FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
+CREATE TABLE work_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    task_assignment_id INT,
+    log_date DATE,
+    hours_worked DECIMAL(5, 2),
+    FOREIGN KEY (task_assignment_id) REFERENCES task_assignments(id)
+);
+
+
+-- Insert departments
+INSERT INTO departments (name) VALUES (&apos;Engineering&apos;), (&apos;Marketing&apos;), (&apos;HR&apos;);
+
+-- Insert employees
+INSERT INTO employees (name, department_id, manager_id) VALUES 
+(&apos;Alice&apos;, 1, NULL), -- Manager of Engineering
+(&apos;Bob&apos;, 1, 1),     -- Engineer under Alice
+(&apos;Charlie&apos;, 2, NULL), -- Manager of Marketing
+(&apos;David&apos;, 2, 3),   -- Marketer under Charlie
+(&apos;Eve&apos;, 3, NULL);   -- HR Manager
+
+-- Insert projects
+INSERT INTO projects (name, start_date, end_date) VALUES 
+(&apos;Project Alpha&apos;, &apos;2023-01-01&apos;, &apos;2023-12-31&apos;),
+(&apos;Project Beta&apos;, &apos;2023-02-01&apos;, &apos;2023-11-30&apos;),
+(&apos;Project Gamma&apos;, &apos;2023-03-01&apos;, &apos;2023-10-31&apos;);
+
+-- Insert tasks
+INSERT INTO tasks (project_id, description, status) VALUES 
+(1, &apos;Develop Module A&apos;, &apos;Completed&apos;),
+(1, &apos;Develop Module B&apos;, &apos;In Progress&apos;),
+(2, &apos;Market Research&apos;, &apos;Completed&apos;),
+(2, &apos;Ad Campaign&apos;, &apos;Pending&apos;),
+(3, &apos;Recruitment Drive&apos;, &apos;Completed&apos;),
+(3, &apos;Employee Training&apos;, &apos;In Progress&apos;);
+
+-- Insert task assignments
+INSERT INTO task_assignments (task_id, employee_id, assigned_date, completed_date) VALUES 
+(1, 1, &apos;2023-01-10&apos;, &apos;2023-02-10&apos;),
+(2, 1, &apos;2023-02-15&apos;, NULL),
+(3, 2, &apos;2023-02-20&apos;, &apos;2023-03-20&apos;),
+(4, 2, &apos;2023-03-25&apos;, NULL),
+(5, 3, &apos;2023-03-30&apos;, &apos;2023-04-30&apos;),
+(6, 3, &apos;2023-05-05&apos;, NULL);
+
+-- Insert work logs
+INSERT INTO work_logs (task_assignment_id, log_date, hours_worked) VALUES 
+(1, &apos;2023-01-11&apos;, 8.00),
+(1, &apos;2023-01-12&apos;, 7.50),
+(1, &apos;2023-01-13&apos;, 8.00),
+(2, &apos;2023-02-16&apos;, 6.00),
+(2, &apos;2023-02-17&apos;, 7.00),
+(3, &apos;2023-02-21&apos;, 8.00),
+(3, &apos;2023-02-22&apos;, 7.50),
+(4, &apos;2023-03-26&apos;, 6.00),
+(5, &apos;2023-03-31&apos;, 8.00),
+(5, &apos;2023-04-01&apos;, 7.50),
+(6, &apos;2023-05-06&apos;, 6.00);
+
+
+WITH RECURSIVE EmployeeHierarchy AS (
+    SELECT 
+        e.id AS employee_id,
+        e.name AS employee_name,
+        e.manager_id,
+        e.department_id,
+        d.name AS department_name,
+        0 AS level
+    FROM 
+        employees e
+    JOIN 
+        departments d ON e.department_id = d.id
+    WHERE 
+        e.manager_id IS NULL
+
+    UNION ALL
+
+    SELECT 
+        e.id AS employee_id,
+        e.name AS employee_name,
+        e.manager_id,
+        e.department_id,
+        d.name AS department_name,
+        eh.level + 1 AS level
+    FROM 
+        employees e
+    JOIN 
+        departments d ON e.department_id = d.id
+    JOIN 
+        EmployeeHierarchy eh ON e.manager_id = eh.employee_id
+),
+TaskCompletion AS (
+    SELECT 
+        ta.employee_id,
+        ta.task_id,
+        ta.project_id,
+        COUNT(wl.id) AS task_completed_count,
+        SUM(wl.hours_worked) AS total_hours_worked
+    FROM 
+        task_assignments ta
+    LEFT JOIN 
+        work_logs wl ON ta.id = wl.task_assignment_id
+    GROUP BY 
+        ta.employee_id, ta.task_id, ta.project_id
+),
+ProjectWorkHours AS (
+    SELECT 
+        ta.project_id,
+        SUM(wl.hours_worked) AS project_total_hours
+    FROM 
+        task_assignments ta
+    JOIN 
+        work_logs wl ON ta.id = wl.task_assignment_id
+    GROUP BY 
+        ta.project_id
+),
+IndirectContribution AS (
+    SELECT 
+        eh.employee_id,
+        eh.manager_id,
+        tc.total_hours_worked AS direct_hours,
+        SUM(tc.total_hours_worked) OVER (PARTITION BY eh.manager_id) AS indirect_hours
+    FROM 
+        EmployeeHierarchy eh
+    JOIN 
+        TaskCompletion tc ON eh.employee_id = tc.employee_id
+)
+SELECT 
+    eh.employee_name,
+    eh.department_name,
+    p.name AS project_name,
+    COALESCE(tc.total_hours_worked, 0) AS hours_worked,
+    COALESCE(tc.task_completed_count, 0) AS tasks_completed,
+    COALESCE(pw.project_total_hours, 0) AS project_total_hours,
+    ic.indirect_hours AS indirect_contribution_hours
+FROM 
+    EmployeeHierarchy eh
+LEFT JOIN 
+    TaskCompletion tc ON eh.employee_id = tc.employee_id
+LEFT JOIN 
+    ProjectWorkHours pw ON tc.project_id = pw.project_id
+LEFT JOIN 
+    IndirectContribution ic ON eh.employee_id = ic.manager_id
+ORDER BY 
+    eh.department_name, eh.employee_name, p.name;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;解释&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;EmployeeHierarchy CTE&lt;/strong&gt;: 使用递归CTE来构建员工的层级结构，包括员工ID、姓名、经理ID、部门ID、部门名称和层级级别。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;TaskCompletion CTE&lt;/strong&gt;: 计算每个任务分配的完成情况，包括完成的任务数量和总工作小时数。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ProjectWorkHours CTE&lt;/strong&gt;: 计算每个项目的总工作小时数。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;IndirectContribution CTE&lt;/strong&gt;: 计算每个员工的间接贡献（即下属的工作小时数），使用窗口函数SUM和PARTITION BY来聚合下属的工作小时数。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;最终查询&lt;/strong&gt;: 结合上述CTE，获取每个员工在每个项目上的工作时间、完成的任务数量、项目的总工时以及每个员工的间接贡献。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;题目: 企业项目管理与资源分配分析（深度应用MySQL底层特性）&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;需求&lt;/strong&gt;: 获取每个员工在每个项目上的工作时间、完成的任务数量、项目的总工时以及每个员工的层级结构（上级和下属关系）。此外，还需要计算每个员工的间接贡献（即下属的工作小时数）。最后，通过存储过程来自动化这个查询，并使用触发器来维护某些数据的一致性。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;表结构&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;departments&lt;/code&gt;: 包含部门信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;name&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;employees&lt;/code&gt;: 包含员工基本信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;name&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;department_id&lt;/code&gt; (外键关联到 departments.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;manager_id&lt;/code&gt; (外键关联到 employees.id)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;projects&lt;/code&gt;: 包含项目信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;name&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;start_date&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;end_date&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;tasks&lt;/code&gt;: 包含任务信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;project_id&lt;/code&gt; (外键关联到 projects.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;description&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;status&lt;/code&gt; (ENUM(&apos;Pending&apos;, &apos;In Progress&apos;, &apos;Completed&apos;))&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;task_assignments&lt;/code&gt;: 包含任务分配信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;task_id&lt;/code&gt; (外键关联到 tasks.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;employee_id&lt;/code&gt; (外键关联到 employees.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;assigned_date&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;completed_date&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;work_logs&lt;/code&gt;: 包含工作日志信息。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt; (主键)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;task_assignment_id&lt;/code&gt; (外键关联到 task_assignments.id)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;log_date&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;hours_worked&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;建表语句&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;CREATE TABLE departments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE employees (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    department_id INT,
+    manager_id INT,
+    FOREIGN KEY (department_id) REFERENCES departments(id),
+    FOREIGN KEY (manager_id) REFERENCES employees(id)
+);
+
+CREATE TABLE projects (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100)2 NOT NULL,
+    start_date DATE,
+    end_date DATE
+);
+
+CREATE TABLE tasks (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    project_id INT,
+    description TEXT,
+    status ENUM(&apos;Pending&apos;, &apos;In Progress&apos;, &apos;Completed&apos;) DEFAULT &apos;Pending&apos;,
+    FOREIGN KEY (project_id) REFERENCES projects(id)
+);
+
+CREATE TABLE task_assignments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    task_id INT,
+    employee_id INT,
+    assigned_date DATE,
+    completed_date DATE,
+    FOREIGN KEY (task_id) REFERENCES tasks(id),
+    FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
+CREATE TABLE work_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    task_assignment_id INT,
+    log_date DATE,
+    hours_worked DECIMAL(5, 2),
+    FOREIGN KEY (task_assignment_id) REFERENCES task_assignments(id)
+);
+
+
+-- Insert departments
+INSERT INTO departments (name) VALUES (&apos;Engineering&apos;), (&apos;Marketing&apos;), (&apos;HR&apos;);
+
+-- Insert employees
+INSERT INTO employees (name, department_id, manager_id) VALUES 
+(&apos;Alice&apos;, 1, NULL), -- Manager of Engineering
+(&apos;Bob&apos;, 1, 1),     -- Engineer under Alice
+(&apos;Charlie&apos;, 2, NULL), -- Manager of Marketing
+(&apos;David&apos;, 2, 3),   -- Marketer under Charlie
+(&apos;Eve&apos;, 3, NULL);   -- HR Manager
+
+-- Insert projects
+INSERT INTO projects (name, start_date, end_date) VALUES 
+(&apos;Project Alpha&apos;, &apos;2023-01-01&apos;, &apos;2023-12-31&apos;),
+(&apos;Project Beta&apos;, &apos;2023-02-01&apos;, &apos;2023-11-30&apos;),
+(&apos;Project Gamma&apos;, &apos;2023-03-01&apos;, &apos;2023-10-31&apos;);
+
+-- Insert tasks
+INSERT INTO tasks (project_id, description, status) VALUES 
+(1, &apos;Develop Module A&apos;, &apos;Completed&apos;),
+(1, &apos;Develop Module B&apos;, &apos;In Progress&apos;),
+(2, &apos;Market Research&apos;, &apos;Completed&apos;),
+(2, &apos;Ad Campaign&apos;, &apos;Pending&apos;),
+(3, &apos;Recruitment Drive&apos;, &apos;Completed&apos;),
+(3, &apos;Employee Training&apos;, &apos;In Progress&apos;);
+
+-- Insert task assignments
+INSERT INTO task_assignments (task_id, employee_id, assigned_date, completed_date) VALUES 
+(1, 1, &apos;2023-01-10&apos;, &apos;2023-02-10&apos;),
+(2, 1, &apos;2023-02-15&apos;, NULL),
+(3, 2, &apos;2023-02-20&apos;, &apos;2023-03-20&apos;),
+(4, 2, &apos;2023-03-25&apos;, NULL),
+(5, 3, &apos;2023-03-30&apos;, &apos;2023-04-30&apos;),
+(6, 3, &apos;2023-05-05&apos;, NULL);
+
+-- Insert work logs
+INSERT INTO work_logs (task_assignment_id, log_date, hours_worked) VALUES 
+(1, &apos;2023-01-11&apos;, 8.00),
+(1, &apos;2023-01-12&apos;, 7.50),
+(1, &apos;2023-01-13&apos;, 8.00),
+(2, &apos;2023-02-16&apos;, 6.00),
+(2, &apos;2023-02-17&apos;, 7.00),
+(3, &apos;2023-02-21&apos;, 8.00),
+(3, &apos;2023-02-22&apos;, 7.50),
+(4, &apos;2023-03-26&apos;, 6.00),
+(5, &apos;2023-03-31&apos;, 8.00),
+(5, &apos;2023-04-01&apos;, 7.50),
+(6, &apos;2023-05-06&apos;, 6.00);
+
+
+
+
+DELIMITER //
+
+CREATE TRIGGER update_task_status_before_insert
+BEFORE INSERT ON task_assignments
+FOR EACH ROW
+BEGIN
+    UPDATE tasks
+    SET status = &apos;In Progress&apos;
+    WHERE id = NEW.task_id;
+END//
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetEmployeeProjectAnalysis()
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE emp_id INT;
+    DECLARE emp_name VARCHAR(100);
+    DECLARE dep_name VARCHAR(100);
+    DECLARE proj_name VARCHAR(100);
+    DECLARE total_hours DECIMAL(5, 2);
+    DECLARE task_count INT;
+    DECLARE proj_total_hours DECIMAL(5, 2);
+    DECLARE indirect_hours DECIMAL(5, 2);
+
+    DECLARE cur CURSOR FOR
+        WITH RECURSIVE EmployeeHierarchy AS (
+            SELECT 
+                e.id AS employee_id,
+                e.name AS employee_name,
+                e.manager_id,
+                e.department_id,
+                d.name AS department_name,
+                0 AS level
+            FROM 
+                employees e
+            JOIN 
+                departments d ON e.department_id = d.id
+            WHERE 
+                e.manager_id IS NULL
+            
+            UNION ALL
+            
+            SELECT 
+                e.id AS employee_id,
+                e.name AS employee_name,
+                e.manager_id,
+                e.department_id,
+                d.name AS department_name,
+                eh.level + 1 AS level
+            FROM 
+                employees e
+            JOIN 
+                departments d ON e.department_id = d.id
+            JOIN 
+                EmployeeHierarchy eh ON e.manager_id = eh.employee_id
+        ),
+        TaskCompletion AS (
+            SELECT 
+                ta.employee_id,
+                ta.task_id,
+                ta.project_id,
+                COUNT(wl.id) AS task_completed_count,
+                SUM(wl.hours_worked) AS total_hours_worked
+            FROM 
+                task_assignments ta
+            LEFT JOIN 
+                work_logs wl ON ta.id = wl.task_assignment_id
+            GROUP BY 
+                ta.employee_id, ta.task_id, ta.project_id
+        ),
+        ProjectWorkHours AS (
+            SELECT 
+                ta.project_id,
+                SUM(wl.hours_worked) AS project_total_hours
+            FROM 
+                task_assignments ta
+            JOIN 
+                work_logs wl ON ta.id = wl.task_assignment_id
+            GROUP BY 
+                ta.project_id
+        ),
+        IndirectContribution AS (
+            SELECT 
+                eh.employee_id,
+                eh.manager_id,
+                tc.total_hours_worked AS direct_hours,
+                SUM(tc.total_hours_worked) OVER (PARTITION BY eh.manager_id) AS indirect_hours
+            FROM 
+                EmployeeHierarchy eh
+            JOIN 
+                TaskCompletion tc ON eh.employee_id = tc.employee_id
+        )
+        SELECT 
+            eh.employee_name,
+            eh.department_name,
+            p.name AS project_name,
+            COALESCE(tc.total_hours_worked, 0) AS hours_worked,
+            COALESCE(tc.task_completed_count, 0) AS tasks_completed,
+            COALESCE(pw.project_total_hours, 0) AS project_total_hours,
+            ic.indirect_hours AS indirect_contribution_hours
+        FROM 
+            EmployeeHierarchy eh
+        LEFT JOIN 
+            TaskCompletion tc ON eh.employee_id = tc.employee_id
+        LEFT JOIN 
+            ProjectWorkHours pw ON tc.project_id = pw.project_id
+        LEFT JOIN 
+            IndirectContribution ic ON eh.employee_id = ic.manager_id
+        ORDER BY 
+            eh.department_name, eh.employee_name, p.name;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN cur;
+
+    read_loop: LOOP
+        FETCH cur INTO emp_name, dep_name, proj_name, total_hours, task_count, proj_total_hours, indirect_hours;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        -- Process each row here if needed
+        SELECT emp_name, dep_name, proj_name, total_hours, task_count, proj_total_hours, indirect_hours;
+    END LOOP;
+
+    CLOSE cur;
+END//
+
+DELIMITER ;
+
+
+CALL GetEmployeeProjectAnalysis();
+
+
+
+
+
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;解释&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;触发器&lt;/strong&gt;: 在插入新的任务分配时，自动将对应任务的状态更新为&quot;In Progress&quot;。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;存储过程&lt;/strong&gt;: 使用递归CTE、窗口函数、多表连接等高级SQL特性来生成复杂的查询结果。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;游标&lt;/strong&gt;: 在存储过程中使用游标来逐行处理查询结果。&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded></item><item><title>测试</title><link>https://turnip1202.github.io/posts/tutorials/test/</link><guid isPermaLink="true">https://turnip1202.github.io/posts/tutorials/test/</guid><description>一个测试的例子。</description><pubDate>Thu, 30 Jan 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;An h1 header&lt;/h1&gt;
+&lt;p&gt;Paragraphs are separated by a blank line.&lt;/p&gt;
+&lt;p&gt;2nd paragraph. &lt;em&gt;Italic&lt;/em&gt;, &lt;strong&gt;bold&lt;/strong&gt;, and &lt;code&gt;monospace&lt;/code&gt;. Itemized lists
+look like:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;this one&lt;/li&gt;
+&lt;li&gt;that one&lt;/li&gt;
+&lt;li&gt;the other one&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Note that --- not considering the asterisk --- the actual text
+content starts at 4-columns in.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Block quotes are
+written like so.&lt;/p&gt;
+&lt;p&gt;They can span multiple paragraphs,
+if you like.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., &quot;it&apos;s all
+in chapters 12--14&quot;). Three dots ... will be converted to an ellipsis.
+Unicode is supported. ☺&lt;/p&gt;
+&lt;h2&gt;An h2 header&lt;/h2&gt;
+&lt;p&gt;Here&apos;s a numbered list:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;first item&lt;/li&gt;
+&lt;li&gt;second item&lt;/li&gt;
+&lt;li&gt;third item&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Note again how the actual text starts at 4 columns in (4 characters
+from the left side). Here&apos;s a code sample:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Let me re-iterate ...
+for i in 1 .. 10 { do-something(i) }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;As you probably guessed, indented 4 spaces. By the way, instead of
+indenting the block, you can use delimited blocks, if you like:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;define foobar() {
+    print &quot;Welcome to flavor country!&quot;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;(which makes copying &amp;amp; pasting easier). You can optionally mark the
+delimited block for Pandoc to syntax highlight it:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import time
+# Quick, count to ten!
+for i in range(10):
+    # (but not *too* quick)
+    time.sleep(0.5)
+    print i
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;An h3 header&lt;/h3&gt;
+&lt;p&gt;Now a nested list:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;First, get these ingredients:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;carrots&lt;/li&gt;
+&lt;li&gt;celery&lt;/li&gt;
+&lt;li&gt;lentils&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Boil some water.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Dump everything in the pot and follow
+this algorithm:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; find wooden spoon
+ uncover pot
+ stir
+ cover pot
+ balance wooden spoon precariously on pot handle
+ wait 10 minutes
+ goto first step (or shut off burner when done)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Do not bump wooden spoon or it will fall.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Notice again how text always lines up on 4-space indents (including
+that last line which continues item 3 above).&lt;/p&gt;
+&lt;p&gt;Here&apos;s a link to &lt;a href=&quot;http://foo.bar&quot;&gt;a website&lt;/a&gt;, to a &lt;a href=&quot;local-doc.html&quot;&gt;local
+doc&lt;/a&gt;, and to a &lt;a href=&quot;#an-h2-header&quot;&gt;section heading in the current
+doc&lt;/a&gt;. Here&apos;s a footnote [^1].&lt;/p&gt;
+&lt;p&gt;[^1]: Footnote text goes here.&lt;/p&gt;
+&lt;p&gt;Tables can look like this:&lt;/p&gt;
+&lt;p&gt;size material color&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;9 leather brown
+10 hemp canvas natural
+11 glass transparent&lt;/p&gt;
+&lt;p&gt;Table: Shoes, their sizes, and what they&apos;re made of&lt;/p&gt;
+&lt;p&gt;(The above is the caption for the table.) Pandoc also supports
+multi-line tables:&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;keyword text&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;red Sunsets, apples, and
+other red or reddish
+things.&lt;/p&gt;
+&lt;p&gt;green Leaves, grass, frogs
+and other things it&apos;s
+not easy being.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;A horizontal rule follows.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;Here&apos;s a definition list:&lt;/p&gt;
+&lt;p&gt;apples
+: Good for making applesauce.
+oranges
+: Citrus!
+tomatoes
+: There&apos;s no &quot;e&quot; in tomatoe.&lt;/p&gt;
+&lt;p&gt;Again, text is indented 4 spaces. (Put a blank line between each
+term/definition pair to spread things out more.)&lt;/p&gt;
+&lt;p&gt;Here&apos;s a &quot;line block&quot;:&lt;/p&gt;
+&lt;p&gt;| Line one
+| Line too
+| Line tree&lt;/p&gt;
+&lt;p&gt;and images can be specified like so:&lt;/p&gt;
+&lt;p&gt;Inline math equations go in like so: $\omega = d\phi / dt$. Display
+math should get its own line and be put in in double-dollarsigns:&lt;/p&gt;
+&lt;p&gt;$$I = \int \rho R^{2} dV$$&lt;/p&gt;
+&lt;p&gt;And note that you can backslash-escape any punctuation characters
+which you wish to be displayed literally, ex.: `foo`, *bar*, etc.&lt;/p&gt;
+</content:encoded></item><item><title>Simple Guides</title><link>https://turnip1202.github.io/posts/guide/</link><guid isPermaLink="true">https://turnip1202.github.io/posts/guide/</guid><description>How to use this blog template.</description><pubDate>Mon, 01 Apr 2024 00:00:00 GMT</pubDate><content:encoded>&lt;blockquote&gt;
+&lt;p&gt;Cover image source: &lt;a href=&quot;https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/208fc754-890d-4adb-9753-2c963332675d/width=2048/01651-1456859105-(colour_1.5),girl,_Blue,yellow,green,cyan,purple,red,pink,_best,8k,UHD,masterpiece,male%20focus,%201boy,gloves,%20ponytail,%20long%20hair,.jpeg&quot;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;This blog template is built with &lt;a href=&quot;https://astro.build/&quot;&gt;Astro&lt;/a&gt;. For the things that are not mentioned in this guide, you may find the answers in the &lt;a href=&quot;https://docs.astro.build/&quot;&gt;Astro Docs&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Front-matter of Posts&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;---
+title: My First Blog Post
+published: 2023-09-09
+description: This is the first post of my new Astro blog.
+image: ./cover.jpg
+tags: [Foo, Bar]
+category: Front-end
+draft: false
+---
+&lt;/code&gt;&lt;/pre&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Attribute&lt;/th&gt;
+&lt;th&gt;Description&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;title&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The title of the post.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;published&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The date the post was published.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;description&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;A short description of the post. Displayed on index page.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;image&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The cover image path of the post.&amp;lt;br/&amp;gt;1. Start with &lt;code&gt;http://&lt;/code&gt; or &lt;code&gt;https://&lt;/code&gt;: Use web image&amp;lt;br/&amp;gt;2. Start with &lt;code&gt;/&lt;/code&gt;: For image in &lt;code&gt;public&lt;/code&gt; dir&amp;lt;br/&amp;gt;3. With none of the prefixes: Relative to the markdown file&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;tags&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The tags of the post.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;category&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The category of the post.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;draft&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;If this post is still a draft, which won&apos;t be displayed.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;Where to Place the Post Files&lt;/h2&gt;
+&lt;p&gt;Your post files should be placed in &lt;code&gt;src/content/posts/&lt;/code&gt; directory. You can also create sub-directories to better organize your posts and assets.&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;src/content/posts/
+├── post-1.md
+└── post-2/
+    ├── cover.png
+    └── index.md
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item></channel></rss>
