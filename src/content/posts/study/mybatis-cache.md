@@ -2,7 +2,7 @@
 
 title: 深入理解 MyBatis 一、二级缓存：提升数据库访问性能的利器
 
-published: 2025-02-04 00:14:00
+published: 2024-06-04 00:14:00
 
 description: 详细解析-mybatis-缓存
 

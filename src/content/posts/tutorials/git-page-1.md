@@ -1,7 +1,7 @@
 ---
 title:  GitHub Pages 部署实战：从源码分支到生产环境的无缝转换
 
-published: 2025-02-05 03:28:05
+published: 2024-02-05 03:28:05
 
 description: 详细解析 GitHub Pages 的现代部署流程，包括分支策略、Actions 配置和常见问题解决
 

@@ -2,7 +2,7 @@
 
 title: Nginx与Laravel协同-构建高效Web服务
 
-published: 2025-02-05 00:14:00
+published: 2025-01-05 00:14:00
 
 description: Nginx与Laravel协同：构建高效Web服务
 

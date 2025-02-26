@@ -1,7 +1,7 @@
 ---
 title:  Jenkins 安装与使用
 
-published: 2025-02-02 22:44:00
+published: 2024-05-02 22:44:00
 
 description: Jenkins快速入门。
 
