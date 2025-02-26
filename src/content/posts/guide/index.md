@@ -1,6 +1,6 @@
 ---
 title: Simple Guides
-published: 2024-04-01
+published: 2023-04-01
 description: "How to use this blog template."
 image: "./cover.jpeg"
 tags: ["Blogging", "Customization"]
