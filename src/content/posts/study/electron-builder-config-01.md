@@ -6,6 +6,8 @@ published: 2025-02-26 16:38:28
 
 description: 一些关键配置
 
+image: "./image/demo-avatar.png"
+
 tags: [Electron, JavaScript, Node.js]
 
 category: frontend
@@ -13,6 +15,7 @@ category: frontend
 draft: false
 
 ---
+
 
 # Electron的打包配置
 * 打包总是会出现electron-v33.0.1-win32-x64.zip下载失败
