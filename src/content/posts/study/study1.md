@@ -6,7 +6,7 @@ published: 2025-03-03 23:31:43
 
 description: C#从基础语法到高级特性
 
-tags: [C#]
+tags: [C]
 
 category: backend
 
