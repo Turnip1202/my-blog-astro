@@ -6,7 +6,7 @@ published: 2025-02-26 16:38:28
 
 description: 一些关键配置
 
-image: "./image/demo-avatar.png"
+image: "./images/demo-avatar.png"
 
 tags: [Electron, JavaScript, Node.js]
 
