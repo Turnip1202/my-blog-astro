@@ -31,25 +31,39 @@ Redis 作为高性能内存数据库，已成为现代应用架构中不可或�
 # 初始化 Node.js 项目
 npm init -y
 # 安装 Redis 客户端（推荐 ioredis）
-npm install ioredis
+npm install ioredis express
 ```
 
 1.2 连接 Redis
 ```javascript
-import Redis from 'ioredis';
+const express = require('express');
+const Redis = require('ioredis');
+const app = express();
+const port = 3000;
 
-// 基础连接（自动重连机制）
 const redis = new Redis({
-  host: process.env.REDIS_HOST || '127.0.0.1',
+  host: '127.0.0.1',
   port: 6379,
-  password: process.env.REDIS_PASSWORD,
-  lazyConnect: true, // 延迟连接优化
-  enableTLS: false // 生产环境建议开启 TLS
+  lazyConnect: true,
 });
+// 连接 Redis
+(async () => {
+  await redis.connect();
+})();
 
-// 连接状态监控
 redis.on('connect', () => console.log('✅ Redis 连接成功'));
 redis.on('error', (err) => console.error('❌ Redis 错误:', err));
+
+// 示例接口
+app.get('/test', async (req, res) => {
+  // 设置一个键值对
+  await redis.set('testKey', 'Hello, Redis!');
+  res.send('测试成功！');
+});
+
+app.listen(port, () => {
+  console.log(`服务运行在 http://localhost:${port}`);
+});
 ```
 
 > 注意：生产环境建议通过 Docker 部署 Redis 集群：
