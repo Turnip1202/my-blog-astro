@@ -4,12 +4,7 @@ title: 深入详解 Spring Boot 中 `spring.mvc.static-path-pattern` 与 `spring
 
 published: 2025-05-26 21:13:06
 
-description: 在 Spring Boot 应用中，静态资源（如 HTML、CSS、JS、图片等）的访问是常见的需求。Spring Boot 提供了两个重要的配置项来控制静态资源的路径匹配和存储位置：
-
-- `spring.mvc.static-path-pattern`
-- `spring.web.resources.static-locations`
-
-本文将详细解析这两个配置的作用、区别以及如何结合使用。
+description: 在 Spring Boot 应用中，静态资源（如 HTML、CSS、JS、图片等）的访问是常见的需求。Spring Boot 提供了两个重要的配置项来控制静态资源的路径匹配和存储位置： `spring.mvc.static-path-pattern` 和 `spring.web.resources.static-locations`。本文将详细解析这两个配置的作用、区别以及如何结合使用。
 
 tags: [Spring, Java]
 
