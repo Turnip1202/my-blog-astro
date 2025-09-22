@@ -6,8 +6,6 @@ published: 2024-08-26 16:38:28
 
 description: 一些关键配置
 
-image: "./images/demo-avatar.png"
-
 tags: [Jenkins, Java]
 
 category: backend
